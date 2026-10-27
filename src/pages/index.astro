@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeadPreload from '../components/HeadPreload.astro';
+import Feed from '../components/Feed.astro';
+import Header from '../components/Header/Header.astro';
+import { SITE } from '@/config';
+import { sortPosts } from '@/util';
+
+const posts = Object.values(import.meta.glob('./posts/*.md', { eager: true })) as any[];
+const allPosts = sortPosts(posts);
+---
+
+<BaseLayout title={SITE.title} description={SITE.description} pageURL={SITE.homePage} markdownUrl='/index.md'>
+  <HeadPreload slot='head' allPosts={allPosts} />
+
+  <Header layout='feed' />
+  <div class='feed-container mx-auto -mt-5 mb-12'>
+    <Feed allPosts={allPosts} />
+  </div>
+</BaseLayout>

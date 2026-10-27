@@ -1,0 +1,21 @@
+---
+import { SITE } from '@/config';
+import HeaderLink from './HeaderLink.astro';
+import Search from './Search.astro';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
+const { twitterId, githubId } = SITE;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<div class='flex-grow text-right flex items-center justify-end gap-4'>
+  <HeaderLink href='/archive' class='hidden md:inline-flex'>{t('nav.home')}</HeaderLink>
+  <HeaderLink href='/tags' class='hidden md:inline-flex'>{t('nav.tags')}</HeaderLink>
+  <HeaderLink href='/about' class='hidden md:inline-flex'>{t('nav.about')}</HeaderLink>
+  {githubId && <HeaderLink href={`https://github.com/${githubId}`} target='_blank' class='lg:inline-flex hidden'>GitHub</HeaderLink>}
+  {twitterId && <HeaderLink href={`https://twitter.com/${twitterId}`} target='_blank' class='lg:inline-flex hidden'>Twitter</HeaderLink>}
+  <HeaderLink href='/rss.xml' target='_blank' class='hidden md:inline-flex' title='RSS'>RSS</HeaderLink>
+
+  <Search />
+</div>

@@ -1,0 +1,32 @@
+---
+import { cardImage } from '@/util';
+
+export interface Props {
+  allPosts: any[];
+}
+
+const { allPosts } = Astro.props;
+---
+
+{
+  // Preload only the top 3 cards (the LCP candidates); more preloads just
+  // compete with the LCP image for early bandwidth, the rest are loading="lazy".
+  // A phone shows one card in its first screen, so the other two wait for a
+  // multi-column layout there.
+  allPosts.slice(0, 3).map((post, index) => {
+    const image = post.frontmatter.image;
+    if (!image) return null;
+    const cover = cardImage(image);
+    return (
+      <link
+        rel='preload'
+        href={cover.src}
+        imagesrcset={cover.srcset}
+        imagesizes={cover.sizes}
+        as='image'
+        media={index === 0 ? undefined : '(min-width: 640px)'}
+        fetchpriority={index === 0 ? 'high' : 'auto'}
+      />
+    );
+  })
+}

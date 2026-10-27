@@ -1,0 +1,435 @@
+---
+import '../styles/markdown.css';
+import BaseLayout from './BaseLayout.astro';
+import AstroLogo from '../components/Header/AstroLogo.astro';
+import LeftSidebar from '../components/LeftSidebar.astro';
+import Search from '../components/Header/Search.astro';
+import ReaderModeToggle from '../components/ReaderModeToggle.astro';
+import ParagraphShare from '../components/ParagraphShare.astro';
+import { SITE, GISCUS_CONFIG } from '@/config';
+import { sortPosts, getIndex, toNumericUrl, extractTitlePart, getSlugParts, tagSlug, formatDate } from '@/util';
+import { getLangFromUrl, useTranslations, useLocalizedPath } from '../i18n/utils';
+
+export interface Props {
+  frontmatter: {
+    date: string;
+    image: string;
+    description: string;
+    url: string;
+    socialImage: string;
+    title?: string;
+    tags?: string[];
+    body?: string;
+    numericUrl?: string;
+    legacySlug?: string;
+    issueTitle?: string;
+    issueNumber?: number;
+    heroImage?: string;
+  };
+}
+
+const pageUrl = new URL(Astro.request.url);
+const currentPage = pageUrl.pathname;
+const normalize = (path: string | undefined) => {
+  if (!path) return path;
+  return path !== '/' && path.endsWith('/') ? path.slice(0, -1) : path;
+};
+const { date, image, description, url, socialImage, numericUrl, legacySlug, issueTitle, heroImage } = Astro.props.frontmatter;
+const fmTitle = Astro.props.frontmatter.title;
+const fmTags = Astro.props.frontmatter.tags ?? [];
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const translatePath = useLocalizedPath(lang);
+
+const normalizedCurrent = normalize(currentPage) ?? currentPage;
+const normalizedNumeric = normalize(numericUrl);
+const effectivePath = normalizedNumeric ?? normalizedCurrent;
+
+const { numberPart } = getSlugParts(legacySlug ?? extractTitlePart(effectivePath));
+// 知识库版：标题优先用 frontmatter.title，没有才退回文件名里的名称
+const slugName = getSlugParts(legacySlug ?? extractTitlePart(effectivePath)).name;
+const displayTitle = fmTitle || decodeURIComponent(slugName || issueTitle || '无标题');
+const title = displayTitle;
+
+// Check if current path is the legacy slug path (with hyphen and title)
+// If so, mark it to be ignored by Pagefind to avoid duplicate search results
+const isLegacyPath = normalizedCurrent !== normalizedNumeric && normalizedCurrent?.includes('-');
+
+const content = {
+  title,
+  image: image,
+  description,
+  socialImage,
+  date,
+};
+const currentUrl = `${SITE.homePage}${effectivePath}`;
+
+// The next article
+const posts = Object.values(import.meta.glob('../pages/posts/*.md', { eager: true }));
+const allPosts = sortPosts(posts);
+const postIndex = getIndex(effectivePath);
+const toNavUrl = (post: any) => (post ? (post.frontmatter?.numericUrl ?? toNumericUrl(post.url)) : '');
+let nextUrl = postIndex > 2 ? toNavUrl(allPosts[allPosts.length - postIndex + 1]) : '';
+let prevUrl = postIndex < allPosts.length ? toNavUrl(allPosts[allPosts.length - postIndex - 1]) : '';
+
+// Use the issue number as the Giscus term to unify comments across languages
+const getGiscusTerm = () => {
+  return numberPart;
+};
+
+const giscusTerm = getGiscusTerm();
+// 填了 Giscus 的 repo / repoId 才渲染评论区
+const giscusEnabled = Boolean(GISCUS_CONFIG.repo && GISCUS_CONFIG.repoId);
+
+const giscusAttrs = {
+  'data-repo': GISCUS_CONFIG.repo,
+  'data-repo-id': GISCUS_CONFIG.repoId,
+  'data-category': GISCUS_CONFIG.category,
+  'data-category-id': GISCUS_CONFIG.categoryId,
+  'data-mapping': 'specific',
+  'data-term': giscusTerm,
+  'data-strict': GISCUS_CONFIG.strict,
+  'data-reactions-enabled': GISCUS_CONFIG.reactionsEnabled,
+  'data-emit-metadata': GISCUS_CONFIG.emitMetadata,
+  'data-input-position': GISCUS_CONFIG.inputPosition,
+  'data-lang': lang === 'en' ? 'en' : 'zh-CN',
+  'data-loading': 'lazy',
+};
+---
+
+<BaseLayout
+  title={`${SITE.title} · ${title}`}
+  content={content}
+  pageURL={currentUrl}
+  markdownUrl={`${effectivePath}.md`}
+>
+  <meta slot='head' data-pagefind-meta={`url:${currentUrl}`} />
+  {heroImage && <link rel='preload' as='image' href={heroImage} slot='head' fetchpriority='high' />}
+  <!-- Post-specific styles -->
+  <style slot='head'>
+    body {
+      width: 100%;
+      /* Track plus padding equals the feed's --frame-pad, so on narrow
+         screens the text starts where the home cards do. */
+      --gutter: calc(var(--frame-pad) / 2);
+      --doc-padding: 32px;
+    }
+
+    /* The homepage's frame (--frame-width in index.css), so the page keeps
+       its width and the logo stays put between the feed and an issue. */
+    .layout {
+      width: 100%;
+      max-width: var(--frame-width);
+      margin: 0 auto;
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-columns:
+        minmax(var(--gutter), 1fr) minmax(0, var(--max-width))
+        minmax(var(--gutter), 1fr);
+      overflow-x: hidden;
+    }
+
+    .heti h1.content-title:first-child {
+      margin-block-start: 0 !important;
+      margin-bottom: 24px;
+      letter-spacing: 0.32px;
+      line-height: 1.2;
+    }
+
+    .content-title {
+      align-items: center;
+    }
+
+    .content-title .content-logo {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 4px;
+      margin: -8px -4px;
+      margin-top: -14px;
+      /* The cup sits 6px inside its own canvas; pull its ink onto the cover's edge. */
+      margin-left: -10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :global(.content-logo img) {
+      background-color: transparent !important;
+      border-radius: 0 !important;
+    }
+
+    .content-title .content-logo:hover,
+    .content-title .content-logo:focus,
+    .content-title .content-logo:active {
+      text-decoration: none;
+      border-block-end: none;
+      padding-block-end: 8px;
+    }
+
+    @media (min-width: 800px) {
+      .content-title .content-logo {
+        display: none;
+      }
+
+      .heti h1.content-title:first-child {
+        margin-bottom: 32px;
+      }
+
+      .markdown-body {
+        margin-top: 13px;
+      }
+    }
+
+    .grid-sidebar {
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      padding: 0;
+      margin-left: -5px;
+    }
+
+    #grid-left {
+      position: fixed;
+      background-color: var(--theme-bg);
+      z-index: 10;
+      display: none;
+    }
+
+    #grid-main {
+      padding: calc((var(--theme-navbar-height) - 40px) / 2) var(--gutter) 80px var(--gutter);
+      grid-column: 2;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #grid-right {
+      display: none;
+    }
+
+    @media (min-width: 800px) {
+      body {
+        --gutter: 0px;
+      }
+
+      .layout {
+        overflow: initial;
+        grid-template-columns: 288px minmax(0, var(--max-width));
+        gap: 0;
+      }
+
+      #grid-main {
+        padding: 13px 32px 64px 32px;
+      }
+
+      #grid-left {
+        display: flex;
+        /* Puts the sidebar cup where the header's sits on the feed. */
+        padding-left: calc(var(--frame-pad) + 5px);
+        position: sticky;
+        grid-column: 1;
+      }
+    }
+    @media (min-width: 1152px) {
+      .layout {
+        grid-template-columns: 320px minmax(0, var(--max-width)) 208px;
+        padding-left: 0;
+        padding-right: 0;
+        margin: 0 auto;
+      }
+
+      #grid-right {
+        grid-column: 3;
+        display: flex;
+      }
+    }
+
+    .gsc-left-header .color-text-secondary {
+      display: none;
+    }
+
+    .logo {
+      display: none;
+    }
+
+    @media (max-width: 800px) {
+      .logo {
+        display: block;
+        color: #fff;
+        margin-left: -3px;
+      }
+
+      .logo:active {
+        text-decoration: none;
+        border-block-end: none;
+        padding-block-end: unset;
+      }
+
+      #grid-main {
+        margin-top: 0;
+        padding: 12px var(--gutter) var(--doc-padding) var(--gutter);
+      }
+
+      /* md:max-w-2xl would centre the text in the 768-799 band, the only
+         widths where it is narrower than the column, and move the logo. */
+      #write {
+        max-width: none;
+      }
+
+      .heti h1.content-title:first-child {
+        margin-block-start: 16px !important;
+        margin-bottom: 24px;
+        font-size: 32px;
+        line-height: 1;
+      }
+
+      .content-title .content-logo {
+        margin-right: 0;
+      }
+    }
+
+    .post-footer a {
+      color: var(--theme-accent);
+    }
+
+    .post-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: -12px 0 22px;
+    }
+
+    .post-tag {
+      display: inline-block;
+      font-size: 13px;
+      line-height: 1;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--theme-accent);
+      background-color: var(--theme-bg-hover, rgba(166, 124, 82, 0.08));
+      text-decoration: none;
+      transition: opacity 120ms ease-out;
+    }
+
+    .post-tag:hover {
+      opacity: 0.75;
+      border-block-end: none;
+    }
+
+    .post-footer a:hover {
+      border-block-end: none;
+    }
+
+    .heti .pay-button {
+      border: 0;
+      cursor: pointer;
+      color: var(--theme-bg);
+      background-color: var(--theme-text);
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 136px;
+      padding: 0 var(--space-5);
+      border-radius: var(--radius);
+      font-size: var(--font-size-small);
+      transition: opacity 0.12s ease-out;
+    }
+
+    .heti .pay-button:hover {
+      opacity: 0.9;
+    }
+
+    .heti .pay-button:active {
+      opacity: 0.8;
+    }
+
+    .lang-switch-icon:hover {
+      background-color: var(--theme-bg-hover);
+    }
+
+    .lang-switch-mobile-btn {
+      text-decoration: none !important;
+    }
+
+    .lang-switch-mobile-btn:hover {
+      opacity: 1 !important;
+      border-block-end: none !important;
+      padding-block-end: 0 !important;
+      background-color: var(--theme-bg-hover) !important;
+    }
+
+    :global(iframe.giscus-frame) {
+      width: 100%;
+    }
+  </style>
+
+  <!-- Post layout -->
+  <main class='layout' data-pagefind-ignore={isLegacyPath ? '' : undefined}>
+    <aside id='grid-left' class='grid-sidebar' title='Site Navigation'>
+      <LeftSidebar currentPage={effectivePath} />
+    </aside>
+    <div id='grid-main'>
+      <div class='markdown-body heti md:mx-auto md:pb-20 pb-14 xl:max-w-7xl w-full lg:max-w-5xl md:max-w-2xl' id='write'>
+        <h1 class='content-title flex text-gray-800 dark:text-gray-200' tabindex='0'>
+          <a class='content-logo pswp-ignore inline-block md:hidden visible' href={translatePath('/')} aria-label={t('site.title')}
+            ><AstroLogo size={40} class='pswp-ignore' />
+          </a>
+          <span data-pagefind-meta='title' class='leading-tight flex-1 min-w-0 truncate'>
+            {displayTitle}
+          </span>
+          <ReaderModeToggle />
+          <Search />
+        </h1>
+        {
+          fmTags.length > 0 && (
+            <div class='post-tags'>
+              {fmTags.map((tag) => (
+                <a class='post-tag' href={`/tags/${tagSlug(tag)}`}>
+                  {tag}
+                </a>
+              ))}
+            </div>
+          )
+        }
+        <slot />
+        <hr class='post-divider' />
+        <div class='flex justify-between md:flex-row flex-col mt-2 post-footer'>
+          <div class='text-gray-800 dark:text-gray-200 flex-1'>
+            写于 <span data-pagefind-sort='date'>{formatDate(date, '.')}</span>
+          </div>
+          <div class='md:mt-0 mt-4 flex-1 text-right'>
+            {nextUrl ? <a href={translatePath(nextUrl)}>下一篇 |</a> : null}
+            {prevUrl ? <a href={translatePath(prevUrl)}>上一篇 |</a> : null}
+            <a href='/archive'>归档 |</a>
+            <a href='/tags'>标签 |</a>
+            <a href={translatePath('/')}>去首页</a>
+          </div>
+        </div>
+      </div>
+      {
+        giscusEnabled && (
+          <>
+            <div class='giscus' />
+            <script is:inline define:vars={{ giscusAttrs }}>
+              // Create the Giscus script with the theme already resolved, so the
+              // iframe is born in the right theme instead of being corrected by
+              // postMessage calls that can arrive before it is ready.
+              (() => {
+                const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+                const script = document.createElement('script');
+                script.id = 'giscus-script';
+                script.src = 'https://giscus.app/client.js';
+                script.async = true;
+                script.crossOrigin = 'anonymous';
+                Object.entries(giscusAttrs).forEach(([key, value]) => script.setAttribute(key, String(value)));
+                script.setAttribute('data-theme', `${location.origin}/styles/giscus-${theme}.css`);
+                document.body.appendChild(script);
+              })();
+            </script>
+          </>
+        )
+      }
+    </div>
+  </main>
+  <ParagraphShare />
+</BaseLayout>

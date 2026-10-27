@@ -1,0 +1,69 @@
+# Allow all search engines
+User-agent: *
+Allow: /
+Disallow: /pagefind/
+Disallow: /_astro/
+
+# Sitemap and structured data feeds
+# 部署后把 your-domain.com 换成正式域名，与 src/config.ts 的 homePage 保持一致
+Sitemap: https://your-domain.com/sitemap-index.xml
+Schemamap: https://your-domain.com/schemamap.xml
+
+# Machine-readable entry points for agents
+# Navigation index:  https://your-domain.com/llms.txt
+# Agent guide:       https://your-domain.com/llms.md
+# Markdown mirror:   https://your-domain.com/index.md (append .md to any page)
+# JSON API:          https://your-domain.com/api/index.json
+# OpenAPI 3.1:       https://your-domain.com/openapi.json
+# JSON-LD feed:      https://your-domain.com/feeds/posts.jsonl
+
+# Search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+# AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# AI Search Bots (retrieval-only, not training)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /

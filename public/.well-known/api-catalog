@@ -1,0 +1,43 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://weekly.tw93.fun/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://weekly.tw93.fun/api",
+          "title": "潮流周刊 (Tw93 Weekly) content API",
+          "type": "application/json"
+        }
+      ]
+    },
+    {
+      "anchor": "https://weekly.tw93.fun/api",
+      "service-desc": [
+        {
+          "href": "https://weekly.tw93.fun/openapi.json",
+          "type": "application/openapi+json",
+          "title": "OpenAPI 3.1 description of the read-only content API"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://weekly.tw93.fun/llms.md",
+          "type": "text/markdown",
+          "title": "Agent guide: when to use this site and how to call it"
+        },
+        {
+          "href": "https://weekly.tw93.fun/api/llms.txt",
+          "type": "text/plain",
+          "title": "API-scoped agent index"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://weekly.tw93.fun/api/index.json",
+          "type": "application/json",
+          "title": "Endpoint list, issue counts, licensing and contact details"
+        }
+      ]
+    }
+  ]
+}

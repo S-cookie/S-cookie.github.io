@@ -1,0 +1,54 @@
+{
+  "version": "1",
+  "name": "潮流周刊 (Tw93 Weekly)",
+  "description": "Read-only skills over the 潮流周刊 archive: a Chinese-language weekly newsletter of developer tools, engineering notes, design and life by Tw93, with English translations. One issue per week since November 2020.",
+  "homepage": "https://weekly.tw93.fun",
+  "documentation": "https://weekly.tw93.fun/llms.md",
+  "openapi": "https://weekly.tw93.fun/openapi.json",
+  "auth": {
+    "required": false,
+    "note": "Every skill reads public static files. No credential, no rate limit, no write access."
+  },
+  "skills": [
+    {
+      "name": "weekly-issue-lookup",
+      "description": "Read one specific issue of 潮流周刊 in full, by issue number, as Markdown or JSON. Use when a question references a numbered issue or a specific week's picks.",
+      "documentation": "https://weekly.tw93.fun/skills/weekly-issues/SKILL.md",
+      "endpoints": [
+        "https://weekly.tw93.fun/posts/{issue}.md",
+        "https://weekly.tw93.fun/en/posts/{issue}.md",
+        "https://weekly.tw93.fun/api/posts/{issue}.json"
+      ]
+    },
+    {
+      "name": "weekly-archive-index",
+      "description": "List or filter every issue by number, date, title and one-line description before fetching content. Use to locate which issue covered a topic or a date range.",
+      "documentation": "https://weekly.tw93.fun/api/llms.txt",
+      "endpoints": [
+        "https://weekly.tw93.fun/api/posts.json",
+        "https://weekly.tw93.fun/index.md",
+        "https://weekly.tw93.fun/feeds/posts.jsonl"
+      ]
+    },
+    {
+      "name": "weekly-item-search",
+      "description": "Search every tool, project, article and note recommended across all issues, with Tw93's comment and the issue it came from. Use for questions that span the archive, such as which terminal apps or AI coding tools the Weekly recommended over the years.",
+      "documentation": "https://weekly.tw93.fun/skills/weekly-issues/SKILL.md",
+      "endpoints": [
+        "https://weekly.tw93.fun/api/items.jsonl",
+        "https://weekly.tw93.fun/api/en/items.jsonl",
+        "https://weekly.tw93.fun/items/{year}.md",
+        "https://weekly.tw93.fun/en/items/{year}.md"
+      ]
+    },
+    {
+      "name": "weekly-translation-pair",
+      "description": "Fetch the Chinese original and the English translation of the same issue number, for quoting or comparing bilingual versions of the same paragraph.",
+      "documentation": "https://weekly.tw93.fun/llms.md",
+      "endpoints": [
+        "https://weekly.tw93.fun/api/posts/{issue}.json",
+        "https://weekly.tw93.fun/api/en/posts/{issue}.json"
+      ]
+    }
+  ]
+}

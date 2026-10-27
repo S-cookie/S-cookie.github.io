@@ -1,0 +1,181 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header/Header.astro';
+import { SITE } from '@/config';
+import { postTags, postTitle, postHref, tagSlug, sortPosts, formatDate } from '@/util';
+
+const posts = sortPosts(Object.values(import.meta.glob('../posts/*.md', { eager: true })));
+
+export async function getStaticPaths() {
+  const all = Object.values(import.meta.glob('../posts/*.md', { eager: true })) as any[];
+  const tags = new Set<string>();
+  for (const post of all) for (const tag of postTags(post)) tags.add(tag);
+  return [...tags].map((tag) => ({ params: { tag }, props: { tag } }));
+}
+
+const { tag } = Astro.props as { tag: string };
+const current = decodeURIComponent(Astro.params.tag ?? tag);
+
+const list = posts
+  .filter((post: any) => postTags(post).includes(current))
+  .map((post: any) => ({
+    title: postTitle(post),
+    href: postHref(post),
+    date: formatDate(post.frontmatter?.date, '.'),
+    description: post.frontmatter?.description ?? '',
+  }));
+
+const others = posts
+  .flatMap((post: any) => postTags(post))
+  .filter((t: string, i: number, arr: string[]) => t !== current && arr.indexOf(t) === i)
+  .slice(0, 10);
+---
+
+<BaseLayout title={`${current} · ${SITE.title}`} description={`${SITE.title} 中标签为「${current}」的全部笔记。`} pageURL={`${SITE.homePage}/tags/${tagSlug(current)}`}>
+  <Header layout='page' />
+
+  <main class='page-container mx-auto'>
+    <div class='tag-head'>
+      <a class='tag-back' href='/tags'>← 全部标签</a>
+      <h1>{current}</h1>
+      <p class='tag-meta'>{list.length} 篇笔记</p>
+    </div>
+
+    <ul class='tag-posts'>
+      {
+        list.map((item) => (
+          <li>
+            <a class='tag-post' href={item.href} data-astro-prefetch>
+              <h2>{item.title}</h2>
+              <p>{item.description}</p>
+              <span class='tag-post-date'>{item.date}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    {
+      others.length > 0 && (
+        <div class='tag-others'>
+          <span class='tag-others-label'>相关标签</span>
+          {others.map((t) => (
+            <a class='tag-other' href={`/tags/${tagSlug(t)}`}>
+              {t}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    padding-top: 8px;
+    padding-bottom: 96px;
+  }
+
+  .tag-head {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--theme-divider);
+  }
+
+  .tag-back {
+    font-size: 13px;
+    color: #9a9a9a;
+    text-decoration: none;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-back:hover {
+    color: var(--theme-accent);
+  }
+
+  .tag-head h1 {
+    margin-top: 14px;
+    font-size: clamp(30px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--theme-text);
+  }
+
+  .tag-meta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #8a8a8a;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-posts {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+
+  .tag-post {
+    display: block;
+    padding: 22px 0;
+    text-decoration: none;
+    color: var(--theme-text);
+    border-bottom: 1px solid var(--theme-divider);
+  }
+
+  .tag-post h2 {
+    font-size: 19px;
+    font-weight: 650;
+    line-height: 1.35;
+    transition: color 160ms ease;
+  }
+
+  .tag-post:hover h2 {
+    color: var(--theme-accent);
+  }
+
+  .tag-post p {
+    margin-top: 7px;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #7a7a7a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tag-post-date {
+    display: block;
+    margin-top: 9px;
+    font-size: 12px;
+    color: #a8a8a8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tag-others {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 44px;
+  }
+
+  .tag-others-label {
+    font-size: 12px;
+    color: #a0a0a0;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+
+  .tag-other {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: var(--theme-accent);
+    background-color: rgba(166, 124, 82, 0.08);
+    text-decoration: none;
+  }
+
+  .tag-other:hover {
+    opacity: 0.72;
+  }
+</style>

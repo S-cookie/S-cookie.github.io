@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header/Header.astro';
+import { SITE } from '@/config';
+import { postTags, tagSlug } from '@/util';
+
+const posts = Object.values(import.meta.glob('../posts/*.md', { eager: true }));
+
+const count = new Map<string, number>();
+for (const post of posts as any[]) {
+  for (const tag of postTags(post)) count.set(tag, (count.get(tag) ?? 0) + 1);
+}
+const tags = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh'));
+const max = tags.length ? tags[0][1] : 1;
+---
+
+<BaseLayout title={`标签 · ${SITE.title}`} description={`${SITE.title} 的全部标签。`} pageURL={`${SITE.homePage}/tags`}>
+  <Header layout='page' />
+
+  <main class='page-container mx-auto'>
+    <div class='tags-head'>
+      <h1>标签</h1>
+      <p class='tags-meta'>{tags.length} 个标签 · {posts.length} 篇笔记</p>
+    </div>
+
+    <div class='tag-cloud'>
+      {
+        tags.map(([tag, n]) => (
+          <a class='tag' href={`/tags/${tagSlug(tag)}`} style={`--w:${(n / max).toFixed(2)}`}>
+            <span class='tag-name'>{tag}</span>
+            <span class='tag-count'>{n}</span>
+          </a>
+        ))
+      }
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    padding-top: 8px;
+    padding-bottom: 96px;
+  }
+
+  .tags-head {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--theme-divider);
+  }
+
+  .tags-head h1 {
+    font-size: clamp(30px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--theme-text);
+  }
+
+  .tags-meta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #8a8a8a;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 26px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 9px 15px;
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--theme-text);
+    background-color: rgba(166, 124, 82, 0.06);
+    /* 出现次数越多，字号越大，一眼能看出知识密度 */
+    font-size: calc(15px + var(--w) * 4px);
+    transition:
+      background-color 160ms ease,
+      color 160ms ease;
+  }
+
+  .tag:hover {
+    background-color: rgba(166, 124, 82, 0.16);
+    color: var(--theme-accent);
+  }
+
+  .tag-count {
+    font-size: 11px;
+    opacity: 0.5;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

@@ -1,0 +1,29 @@
+---
+import '../styles/markdown.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './Header/Header.astro';
+import { SITE } from '@/config';
+import { Content as AboutZh } from '@/data/about.zh.md';
+
+const heading = '关于';
+const description = `${SITE.title}是什么、写些什么、怎么组织和检索。`;
+const pageURL = `${SITE.homePage}/about`;
+---
+
+<BaseLayout title={`${heading} · ${SITE.title}`} description={description} pageURL={pageURL} markdownUrl='/about.md' content={{ title: heading }}>
+  <Header />
+  <main class='page-container mx-auto mb-16 -mt-2'>
+    <article class='markdown-body heti'>
+      <h1>{heading}</h1>
+      <AboutZh />
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  article :global(h1) {
+    margin-block-start: 0;
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+</style>

@@ -1,0 +1,225 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header/Header.astro';
+import { SITE } from '@/config';
+import { postTags, postTitle, postHref, tagSlug, sortPosts, formatDate } from '@/util';
+
+const posts = sortPosts(Object.values(import.meta.glob('./posts/*.md', { eager: true })));
+
+type Row = { title: string; href: string; tags: string[]; date: string; ts: number };
+const rows: Row[] = posts.map((post: any) => {
+  const raw = post.frontmatter?.date;
+  const d = new Date(raw);
+  return {
+    title: postTitle(post),
+    href: postHref(post),
+    tags: postTags(post),
+    date: formatDate(raw, '.'),
+    ts: Number.isNaN(d.getTime()) ? 0 : d.getTime(),
+  };
+});
+
+// 按年份分组，组内按时间倒序
+const byYear = new Map<string, Row[]>();
+for (const row of rows) {
+  const year = row.date ? row.date.slice(0, 4) : '未标注';
+  if (!byYear.has(year)) byYear.set(year, []);
+  byYear.get(year)!.push(row);
+}
+const years = [...byYear.entries()]
+  .map(([year, list]) => ({ year, list: list.sort((a, b) => b.ts - a.ts) }))
+  .sort((a, b) => (a.year < b.year ? 1 : -1));
+
+const tagCount = new Map<string, number>();
+for (const row of rows) for (const tag of row.tags) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+const hotTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+---
+
+<BaseLayout title={`归档 · ${SITE.title}`} description={`${SITE.title} 的全部笔记，按年份归档。`} pageURL={`${SITE.homePage}/archive`}>
+  <Header layout='page' />
+
+  <main class='page-container mx-auto'>
+    <div class='archive-head'>
+      <h1>归档</h1>
+      <p class='archive-meta'>共 {rows.length} 篇 · 跨 {years.length} 个年份</p>
+    </div>
+
+    {
+      hotTags.length > 0 && (
+        <div class='archive-tags'>
+          {hotTags.map(([tag, count]) => (
+            <a class='archive-tag' href={`/tags/${tagSlug(tag)}`}>
+              {tag}<span class='archive-tag-count'>{count}</span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+
+    {
+      years.map(({ year, list }) => (
+        <section class='archive-year'>
+          <h2 class='archive-year-title'>
+            {year}
+            <span class='archive-year-count'>{list.length}</span>
+          </h2>
+          <ul class='archive-list'>
+            {list.map((row) => (
+              <li class='archive-row'>
+                <a href={row.href} class='archive-link' data-astro-prefetch>
+                  <span class='archive-date'>{row.date.slice(5)}</span>
+                  <span class='archive-title'>{row.title}</span>
+                  <span class='archive-row-tags'>
+                    {row.tags.slice(0, 2).map((tag) => (
+                      <em>{tag}</em>
+                    ))}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    padding-top: 8px;
+    padding-bottom: 96px;
+  }
+
+  .archive-head {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--theme-divider);
+  }
+
+  .archive-head h1 {
+    font-size: clamp(30px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--theme-text);
+  }
+
+  .archive-meta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #8a8a8a;
+    letter-spacing: 0.04em;
+  }
+
+  .archive-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 18px 0 4px;
+  }
+
+  .archive-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: var(--theme-accent);
+    background-color: rgba(166, 124, 82, 0.08);
+    text-decoration: none;
+  }
+
+  .archive-tag:hover {
+    opacity: 0.72;
+  }
+
+  .archive-tag-count {
+    font-size: 11px;
+    opacity: 0.6;
+  }
+
+  .archive-year {
+    margin-top: 40px;
+  }
+
+  .archive-year-title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--theme-text);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .archive-year-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: #9a9a9a;
+    letter-spacing: 0.06em;
+  }
+
+  .archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .archive-row + .archive-row {
+    border-top: 1px solid var(--theme-divider);
+  }
+
+  .archive-link {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 11px 0;
+    text-decoration: none;
+    color: var(--theme-text);
+  }
+
+  .archive-date {
+    flex-shrink: 0;
+    width: 52px;
+    font-size: 13px;
+    color: #9a9a9a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .archive-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 160ms ease;
+  }
+
+  .archive-link:hover .archive-title {
+    color: var(--theme-accent);
+  }
+
+  .archive-row-tags {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .archive-row-tags em {
+    font-style: normal;
+    font-size: 11px;
+    color: #a8a8a8;
+  }
+
+  @media (max-width: 640px) {
+    .archive-row-tags {
+      display: none;
+    }
+
+    .archive-title {
+      font-size: 15px;
+    }
+  }
+</style>

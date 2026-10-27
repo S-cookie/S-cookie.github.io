@@ -1,0 +1,130 @@
+---
+import { cardImage, postHref, postTags, postTitle, tagHue, formatDate } from '@/util';
+import { SITE } from '@/config';
+
+export interface Props {
+  post: any;
+  priority?: boolean;
+  isLCP?: boolean;
+}
+
+const { post, priority = false, isLCP = false } = Astro.props;
+
+const link = postHref(post);
+const title = postTitle(post);
+const tags = postTags(post);
+// 构建时会把没配图的文章填成站点默认分享图，这里要把这种情况认成"没有封面"
+const rawImage = post.frontmatter?.image;
+const image = rawImage && rawImage !== SITE.siteImage ? rawImage : null;
+const { description, date } = post.frontmatter ?? {};
+const cover = image ? cardImage(image) : null;
+const hue = tags.length ? tagHue(tags[0]) : 30;
+const firstChar = title.trim().slice(0, 1);
+const shownDate = formatDate(date, '.');
+---
+
+<a
+  href={link}
+  data-astro-prefetch
+  data-image={image}
+  class='flex flex-col w-full card-content preload-link'
+>
+  {
+    cover ? (
+      <img
+        src={cover.src}
+        srcset={cover.srcset}
+        sizes={cover.sizes}
+        width='640'
+        height='384'
+        alt={title}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding='async'
+        fetchpriority={isLCP ? 'high' : 'auto'}
+        class='block w-full aspect-[5/3] object-cover rounded-lg card-cover'
+      />
+    ) : (
+      <div class='card-tile w-full' style={`--h:${hue}`} aria-hidden='true'>
+        <span class='tile-char'>{firstChar}</span>
+      </div>
+    )
+  }
+
+  <div class='flex items-center gap-2 pt-3 leading-none'>
+    <div class='flex gap-1.5 overflow-hidden flex-1 min-w-0'>
+      {
+        tags.slice(0, 2).map((tag) => (
+          <span class='card-tag' style={`--h:${tagHue(tag)}`}>
+            {tag}
+          </span>
+        ))
+      }
+    </div>
+    <div class='text-gray-500 dark:text-gray-400 text-[13px] flex-shrink-0 tracking-wide'>{shownDate}</div>
+  </div>
+
+  <div
+    class='text-gray-800 dark:text-gray-200 font-semibold sm:text-base text-lg overflow-hidden text-ellipsis whitespace-nowrap pt-2'
+  >
+    {title}
+  </div>
+
+  <p class='text-gray-600 dark:text-gray-300 overflow-hidden pt-1.5 line-clamp-2 w-full sm:h-12 h-14 sm:text-sm text-[15px]'>
+    {description}
+  </p>
+</a>
+
+<style>
+  /* 没有封面图时的占位卡：用标签的固定色相做一层淡色底，加一个大字水印。
+     这样批量写笔记时不必每篇都配图，视觉上也不会显得残缺。 */
+  .card-tile {
+    position: relative;
+    aspect-ratio: 5 / 3;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background-color: hsl(var(--h) 24% 95%);
+    border: 1px solid hsl(var(--h) 18% 89%);
+  }
+
+  .tile-char {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-52%);
+    font-size: 60px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: hsl(var(--h) 30% 50% / 0.3);
+    user-select: none;
+  }
+
+  :global(.dark) .card-tile {
+    background-color: hsl(var(--h) 8% 15%);
+    border-color: hsl(var(--h) 8% 24%);
+  }
+
+  :global(.dark) .tile-char {
+    color: hsl(var(--h) 26% 72% / 0.18);
+  }
+
+  .card-tag {
+    display: inline-block;
+    flex-shrink: 0;
+    font-size: 12px;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 999px;
+    color: hsl(var(--h) 32% 38%);
+    background: hsl(var(--h) 40% 50% / 0.1);
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.dark) .card-tag {
+    color: hsl(var(--h) 40% 74%);
+    background: hsl(var(--h) 40% 60% / 0.14);
+  }
+</style>
